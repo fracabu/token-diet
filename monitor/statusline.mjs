@@ -3,9 +3,12 @@
 // to <data dir>/limits.jsonl whenever it changes, and prints: model · 5h % · week %.
 // settings.json: "statusLine": { "type": "command", "command": "node ~/.claude/skills/token-diet/monitor/statusline.mjs" }
 // Already have a status line? Copy the recordLimits() function into it instead.
+// Self-contained on purpose (no local imports): it can be copied anywhere, e.g. to ~/.claude/.
 import fs from 'node:fs';
-import { join } from 'node:path';
-import { DATA_DIR } from './lib.mjs';
+import os from 'node:os';
+import { join, resolve } from 'node:path';
+
+const DATA_DIR = process.env.TOKEN_DIET_HOME ? resolve(process.env.TOKEN_DIET_HOME) : join(os.homedir(), '.token-diet');
 
 function recordLimits(s) {
   try {

@@ -1,0 +1,11 @@
+{
+  "name": "token-diet",
+  "version": "1.0.0",
+  "description": "The right Claude model and effort for each phase of a job, and a live local monitor that shows what you save versus running everything on Opus.",
+  "author": { "name": "fracabu" },
+  "homepage": "https://github.com/fracabu/token-diet",
+  "repository": "https://github.com/fracabu/token-diet",
+  "license": "MIT",
+  "keywords": ["tokens", "models", "effort", "cost", "monitor", "sub-agents"],
+  "skills": ["."]
+}

@@ -65,14 +65,24 @@ Each sub-agent writes a `start` event as its first action and `step` events whil
 
 You need [Claude Code](https://claude.com/claude-code) and Node 18 or later. No `npm install`: the monitor uses only Node's standard library.
 
+**As a plugin** (Claude Code 2.1.275 or later), in a Claude Code session:
+
+```
+/plugin install token-diet --marketplace fracabu/green-compute
+```
+
+It comes from the [green-compute](https://github.com/fracabu/green-compute) marketplace, which also bundles token-diet with [kaggle-offload](https://github.com/fracabu/kaggle-offload) and [or-switch](https://github.com/fracabu/or-switch). Choose the user scope to have it in every project: until a job calls for it, it costs only its one-paragraph description in the context.
+
+**Or as a personal skill**, with git:
+
 ```bash
 git clone https://github.com/fracabu/token-diet ~/.claude/skills/token-diet
 ```
 
-That's it: Claude Code picks the skill up on its next start. To see the monitor right away with made-up data:
+Either way, Claude Code picks it up on its next start. To see the monitor right away with made-up data, ask Claude *"show me the token-diet demo"*, or run from the skill's folder:
 
 ```bash
-node ~/.claude/skills/token-diet/monitor/demo.mjs
+node monitor/demo.mjs
 ```
 
 Tested on Windows 11. The code is meant to work on macOS and Linux too, but it hasn't been tested there yet: if you try it, please open an issue.
@@ -81,11 +91,15 @@ Tested on Windows 11. The code is meant to work on macOS and Linux too, but it h
 
 The "your plan" panel needs the status line to record your plan usage (Claude Code passes it to the status line as `rate_limits`, on Pro and Max plans). If you don't have a status line yet, use the one included:
 
-```json
-{ "statusLine": { "type": "command", "command": "node ~/.claude/skills/token-diet/monitor/statusline.mjs" } }
+```bash
+curl -o ~/.claude/token-diet-statusline.mjs https://raw.githubusercontent.com/fracabu/token-diet/main/monitor/statusline.mjs
 ```
 
-If you already have one, copy the `recordLimits()` function from [`monitor/statusline.mjs`](monitor/statusline.mjs) into it.
+```json
+{ "statusLine": { "type": "command", "command": "node ~/.claude/token-diet-statusline.mjs" } }
+```
+
+The file is self-contained, so it keeps working when the plugin updates. If you already have a status line, copy the `recordLimits()` function from [`monitor/statusline.mjs`](monitor/statusline.mjs) into it.
 
 ## Usage
 

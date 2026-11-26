@@ -21,7 +21,7 @@ The goal is the **cost per finished job**, not per request: a cheaper model that
 to redo it, or lets an error out, costs more. Step down where an error is cheap or gets caught
 downstream; stay high where an error leaves the computer or is hard to spot.
 
-Below, `M` means `node ~/.claude/skills/token-diet/monitor`. Data (events, archive, plan usage, server
+Below, `M/<file>` stands for `node "${CLAUDE_SKILL_DIR}/monitor/<file>"`. Data (events, archive, plan usage, server
 log) lives in `~/.token-diet/` (or `$TOKEN_DIET_HOME`), never in the skill folder. Talk to the user in
 their language.
 
@@ -48,7 +48,8 @@ duplicate the header.
 
 Then, as you launch the sub-agents, the monitor fills up (phases become columns in order of appearance):
 
-- **The agent**, as its FIRST action (put it in its brief):
+- **The agent**, as its FIRST action (put it in its brief, with `M/` written out as the full
+  `node "<skill dir>/monitor/` path: the sub-agent cannot see this skill):
   `M/event.mjs <job> <phase> start "started" --model <m> --effort <e>`.
   ⛔ **Never write the start event yourself before the launch.** If the launch is stopped or refused,
   the monitor keeps showing agents "at work" that never started, and the user thinks tokens are being
