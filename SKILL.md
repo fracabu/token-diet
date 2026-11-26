@@ -85,7 +85,11 @@ Almost every long job has three phases with different needs. Evaluate them separ
 |---|---|---|
 | **Mechanical** | renaming, converting formats, extracting text, layout, checks with a script, grep, copying data from A to B | Haiku, effort `low` |
 | **Production** | writing to an approved template, mid-complexity code with a clear spec, summaries, drafts | Sonnet, effort `medium`/`high` |
-| **Judgement and verification** | architecture decisions, hard debugging, checking the correctness of something that ships (data, regulations, numbers, client deliverables), writing the first version of a template that will be copied | Opus, effort `high` (or `xhigh`) |
+| **Judgement and verification** | architecture decisions, hard debugging, checking the correctness of something that ships (data, regulations, numbers, client deliverables), writing the first version of a template that will be copied | Opus, effort `high` |
+
+**The ceiling is Opus 5.5 at effort `high`.** Never recommend or launch anything above it (Fable, or the
+`xhigh` and `max` efforts) unless the user asks for it explicitly. Above that ceiling cost and time grow
+much faster than quality for this kind of work; the savings come from going *down* from Opus high.
 
 ### 2. Evaluate each phase with five questions
 
@@ -110,10 +114,12 @@ part to a sub-agent (it has its own context and does not touch the session's cac
 
 | Model | Alias | Input | Output | For |
 |---|---|---|---|---|
-| Claude Fable 5.2 | `fable` | $8 | $40 | the most capable: hardest reasoning, very long autonomous jobs |
-| Claude Opus 5.5 | `opus` | $4 | $20 | complex reasoning, verification, architecture: the default |
+| Claude Opus 5.5 | `opus` | $4 | $20 | complex reasoning, verification, architecture: the default and the ceiling |
 | Claude Sonnet 5.5 | `sonnet` | $2 | $10 | everyday work: code and content with a clear spec |
 | Claude Haiku 5.5 | `haiku` | $0.10 | $0.50 | fast and cheap: mechanical work, reading and sorting |
+
+Claude Fable 5.2 (`fable`, $8 / $40) exists above Opus but is outside this skill's range: only on the
+user's explicit request.
 
 If the date above is more than a few months old, recheck models and prices (the `claude-api` skill, or
 Anthropic's pricing page) before quoting them. On a Claude subscription (Pro/Max) you don't pay per token
@@ -121,14 +127,15 @@ but you use up the plan's limits: the ratio between models stays the same.
 
 ## Effort
 
-Levels: `low`, `medium`, `high`, `xhigh`, `max`. Higher = more reasoning, more tokens, more time.
-Default for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5: **`medium`**.
+Levels used here: `low`, `medium`, `high`. Higher = more reasoning, more tokens, more time.
+Default for Opus 5.5, Sonnet 5.5 and Haiku 5.5: **`medium`**.
 
 - `low`: quick exchanges, mechanical work, simple sub-agents.
 - `medium`: everyday work.
-- `high`: when verification and edge cases matter. Recommended minimum for work that needs intelligence.
-- `xhigh`: deeper reasoning; good for code and complex agentic jobs.
-- `max`: only for genuinely hard problems; diminishing returns, it can overthink.
+- `high`: when verification and edge cases matter. Recommended minimum for work that needs intelligence,
+  and the top this skill uses.
+
+`xhigh` and `max` exist above it: only on the user's explicit request (diminishing returns, they can overthink).
 
 ## How to apply it in Claude Code
 
@@ -137,7 +144,7 @@ Sub-agents, instead, are launched directly with the right model.
 
 | Where | How |
 |---|---|
-| Main session | `/model sonnet` (or `opus`, `haiku`, `fable`); `/model` opens the picker |
+| Main session | `/model sonnet` (or `opus`, `haiku`); `/model` opens the picker |
 | Session effort | `/effort high`; `/effort status` shows the current one; `/effort auto` goes back to the default |
 | At startup | `claude --model sonnet --effort high` |
 | Plan with Opus, execute with Sonnet | `/model opusplan` |
