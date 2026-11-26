@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>monitor · token-diet</title>
+<style>
+  :root{
+    --bg:#0c0d0b; --card:#121310; --cell:#161714; --ink:#e9e7df; --muted:#77766d; --line:#262722; --faint:#1c1d19;
+    --haiku:#2dd4ee; --sonnet:#fbbf24; --opus:#ff4fa3; --fable:#a78bfa; --session:#e9e7df; --acid:#c6f432; --stop:#ff6b3d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font:13px/1.45 "JetBrains Mono","Cascadia Mono","SF Mono",Consolas,ui-monospace,monospace;padding:28px 32px 40px}
+  .wrap{max-width:1180px;margin:0 auto}
+  .prompt{display:flex;align-items:baseline;gap:12px;font-size:15px}
+  .prompt .ps{color:var(--acid)}
+  .cur{display:inline-block;width:8px;height:16px;background:var(--acid);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .meta{margin-left:auto;color:var(--muted);font-size:12px}
+  .meta b{color:var(--ink);font-weight:600}
+  .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acid);margin-right:6px;animation:pulse 1.6s infinite}
+  .live.off{background:var(--stop);animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(198,244,50,.45)}70%{box-shadow:0 0 0 7px rgba(198,244,50,0)}100%{box-shadow:0 0 0 0 rgba(198,244,50,0)}}
+
+  .top{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin:22px 0 20px}
+  .panel{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+  .lab{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+  .save{display:flex;align-items:flex-end;gap:22px}
+  .big{font-size:54px;line-height:1;font-weight:700;letter-spacing:-.03em;color:var(--acid)}
+  .big small{font-size:22px;font-weight:600;margin-left:2px}
+  .bars{flex:1;display:grid;gap:9px;padding-bottom:4px}
+  .brow{display:grid;grid-template-columns:96px 1fr 70px;align-items:center;gap:10px;font-size:12px}
+  .brow .v{text-align:right;font-variant-numeric:tabular-nums}
+  .track{height:10px;background:var(--faint);position:relative;overflow:hidden}
+  .fill{position:absolute;inset:0 auto 0 0;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+  .fill.base{background:repeating-linear-gradient(135deg,#3a3b35 0 4px,#24251f 4px 8px)}
+  .fill.real{background:var(--acid)}
+  .hint{margin-top:10px;font-size:11px;color:var(--muted)}
+
+  .stack{display:flex;height:10px;background:var(--faint);overflow:hidden;margin-bottom:12px}
+  .stack div{transition:flex-grow .9s cubic-bezier(.2,.8,.2,1);flex-basis:0}
+  .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+  .mod{border-left:3px solid;padding:2px 0 2px 10px}
+  .mod .n{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+  .mod .s{font-size:11px;color:var(--muted)}
+  .mod .act{font-size:11px}
+  .dots{display:inline-flex;gap:3px;margin-left:6px;vertical-align:1px}
+  .dots i{width:5px;height:5px;border-radius:50%;background:currentColor;animation:bob 1s infinite}
+  .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+  @keyframes bob{0%,100%{opacity:.2}50%{opacity:1}}
+
+  .plan{margin:-2px 0 20px}
+  .plangrid{display:grid;grid-template-columns:1.15fr 1fr;gap:28px;align-items:center}
+  .brow2{display:grid;grid-template-columns:96px 1fr 120px;align-items:center;gap:10px;font-size:12px;margin-bottom:9px}
+  .brow2 .v{text-align:right;font-variant-numeric:tabular-nums}
+  .fill.pre{background:#4a4b44}
+  .fill.run{background:var(--acid);transition:left .9s cubic-bezier(.2,.8,.2,1),width .9s cubic-bezier(.2,.8,.2,1)}
+  .leg{font-size:11px;color:var(--muted)}
+  .sw{display:inline-block;width:9px;height:9px;margin:0 5px 0 0;vertical-align:-1px}
+  .sw.pre{background:#4a4b44}.sw.run{background:var(--acid);margin-left:12px}
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed var(--faint)}
+  .kv:last-child{border-bottom:0}
+  .kv span{color:var(--muted)} .kv b{font-variant-numeric:tabular-nums} .kv b.acid{color:var(--acid)}
+  .flow{background:var(--card);border:1px solid var(--line);padding:6px 18px 10px}
+  .head,.row{display:grid;align-items:center}
+  .head{font-size:11px;color:var(--muted);padding:10px 0 6px;border-bottom:1px solid var(--line)}
+  .head span.m{display:inline-block;width:8px;height:8px;margin-right:6px}
+  .row{padding:7px 0;border-bottom:1px dashed var(--faint)}
+  .row:last-child{border-bottom:0}
+  .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+  .name .outcome{font-weight:400;color:var(--muted);font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis}
+  .name .outcome.ok{color:var(--acid)}
+  .cell{height:40px;border:1px solid var(--line);background:var(--cell);padding:4px 8px;position:relative;overflow:hidden;transition:background .4s,border-color .4s}
+  .cell .l1{display:flex;justify-content:space-between;font-size:11px;font-variant-numeric:tabular-nums}
+  .cell .l2{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cell.waiting{opacity:.35}
+  .cell.running{border-color:var(--c);box-shadow:0 0 14px -6px var(--c)}
+  .cell.running::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:35%;background:var(--c);animation:scan 1.4s ease-in-out infinite}
+  @keyframes scan{0%{left:-35%}100%{left:100%}}
+  .cell.done{border-color:color-mix(in srgb,var(--c) 55%,transparent);background:color-mix(in srgb,var(--c) 8%,var(--cell))}
+  .cell.stop,.cell.error{border-color:var(--stop);background:color-mix(in srgb,var(--stop) 10%,var(--cell))}
+  .tag{color:var(--c);font-weight:600}
+  .wire{height:2px;margin:0 3px;background:var(--line)}
+  .wire.on{background:repeating-linear-gradient(90deg,var(--acid) 0 5px,transparent 5px 10px);background-size:10px 2px;animation:flow .5s linear infinite}
+  .wire.past{background:#55564e}
+  @keyframes flow{to{background-position:10px 0}}
+
+  .log{margin-top:18px;font-size:12px;min-height:150px}
+  .log .r{display:grid;grid-template-columns:70px 200px 96px 64px 1fr;gap:8px;padding:2px 4px;white-space:nowrap;overflow:hidden}
+  .log .r span:last-child{overflow:hidden;text-overflow:ellipsis}
+  .log .r.fresh{animation:in .7s ease-out}
+  @keyframes in{from{opacity:0;transform:translateY(-4px);background:rgba(198,244,50,.18)}to{opacity:1;transform:none;background:transparent}}
+  .log .t{color:var(--muted)}
+  .empty{color:var(--muted);padding:18px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="prompt">
+    <span class="ps">~ $</span><span id="cmd">token-diet --monitor</span><span class="cur"></span>
+    <span class="meta"><span class="live off" id="live"></span><span id="conn">connecting…</span> · elapsed <b id="elapsed">00:00</b> · agents <b id="nagents">0</b></span>
+  </div>
+
+  <div class="top">
+    <div class="panel">
+      <div class="lab">saved vs. "everything on opus" (estimate)</div>
+      <div class="save">
+        <div class="big" id="perc">0<small>%</small></div>
+        <div class="bars">
+          <div class="brow"><span>all opus</span><div class="track"><div class="fill base" id="fbase"></div></div><span class="v" id="vbase">$0.00</span></div>
+          <div class="brow"><span>mixed</span><div class="track"><div class="fill real" id="freal"></div></div><span class="v" id="vreal">$0.00</span></div>
+        </div>
+      </div>
+      <div class="hint">Tokens arrive when an agent finishes. API prices per million tokens, 85% input / 15% output: on a subscription the ratio matters, not the dollars.</div>
+    </div>
+    <div class="panel">
+      <div class="lab">load per model (tokens)</div>
+      <div class="stack" id="stack"></div>
+      <div class="mods" id="mods"></div>
+    </div>
+  </div>
+
+  <div class="panel plan">
+    <div class="lab">your plan · usage read by the status line</div>
+    <div class="plangrid">
+      <div class="lim">
+        <div class="brow2"><span>5 hours</span><div class="track"><div class="fill pre" id="h5pre"></div><div class="fill run" id="h5run"></div></div><span class="v" id="h5v">n/a</span></div>
+        <div class="brow2"><span>week</span><div class="track"><div class="fill pre" id="d7pre"></div><div class="fill run" id="d7run"></div></div><span class="v" id="d7v">n/a</span></div>
+        <div class="leg"><i class="sw pre"></i>before the job <i class="sw run"></i>during the job</div>
+      </div>
+      <div class="cmpab">
+        <div class="kv"><span>week used by the job</span><b id="pl-used">n/a</b></div>
+        <div class="kv"><span>if it had all been opus</span><b id="pl-opus">n/a</b></div>
+        <div class="kv"><span>week quota saved</span><b class="acid" id="pl-saved">n/a</b></div>
+        <div class="kv"><span>tokens in opus equivalent</span><b id="pl-eq">0</b></div>
+      </div>
+    </div>
+    <div class="hint">These are the plan's real percentages (the same as /usage). Anthropic does not publish how much each model weighs on the limits, so the "all opus" estimate uses the ratio of API prices. The measured value includes the coordinating session.</div>
+  </div>
+
+  <div class="flow">
+    <div class="head" id="head"></div>
+    <div id="rows"><div class="empty">waiting for the first event…</div></div>
+  </div>
+
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+// $ per million tokens [input, output]; blended 85% input / 15% output (API prices checked 26/11/2026)
+const PRICES = {haiku:[0.10,0.50], sonnet:[2,10], opus:[4,20], fable:[8,40], session:[4,20]};
+const PRICE = Object.fromEntries(Object.entries(PRICES).map(([k,[i,o]])=>[k,0.85*i+0.15*o]));
+const COLOR = m => `var(--${PRICES[m]?m:'session'})`;
+const EFFORT = {};
+
+// Events written by older versions use Italian keys and values: read both.
+const STATUS = {avvio:'start', passo:'step', fine:'done', errore:'error'};
+const MODEL = {sessione:'session'};
+const nm = m => m==null ? m : (MODEL[m] || m);
+function normalize(e){
+  const o = {t:e.t, phase:e.phase ?? e.fase};
+  if(o.phase==='_'){
+    o.title = e.title ?? e.giro;
+    const p = e.phases ?? e.fasi;
+    if(Array.isArray(p)) o.phases = p.map(([k,m])=>[k,nm(m)]);
+    return o;
+  }
+  o.job = e.job ?? e.materia;
+  const s = e.status ?? e.stato; o.status = STATUS[s] || s;
+  o.note = e.note ?? e.nota;
+  o.model = nm(e.model ?? e.modello);
+  o.effort = e.effort;
+  o.tokens = e.tokens ?? e.token;
+  o.sec = e.sec;
+  return o;
+}
+
+let phases = [];               // [{k, mod, declared}] in order of appearance
+const jobs = new Map();        // name -> {cells:{phase:{...}}, outcome, ok}
+const events = [];
+let t0 = null, ready = false;
+
+function phase(k, mod, declared){
+  let f = phases.find(x=>x.k===k);
+  if(!f){ f = {k, mod:mod||'session', declared:!!declared}; phases.push(f); }
+  else if(declared){ f.mod = mod||f.mod; f.declared = true; }
+  // a phase first seen without a model takes the first model reported for it
+  else if(mod && !f.declared && f.mod==='session') f.mod = mod;
+  return f;
+}
+function cell(name, k){
+  if(!jobs.has(name)) jobs.set(name, {cells:{}, outcome:''});
+  const J = jobs.get(name);
+  if(!J.cells[k]) J.cells[k] = {state:'waiting'};
+  return J.cells[k];
+}
+
+function apply(ev){
+  if(ev.title) document.getElementById('cmd').textContent = ev.title;
+  if(Array.isArray(ev.phases)) ev.phases.forEach(([k,m])=>phase(k,m,true));
+  if(!ev.job || !ev.phase || ev.phase==='_') return;
+  const t = new Date(ev.t).getTime();
+  if(!t0 || t < t0) t0 = t;
+  const f = phase(ev.phase, ev.model);
+  if(ev.effort) EFFORT[ev.model||f.mod] = ev.effort;
+  const c = cell(ev.job, ev.phase);
+  c.mod = ev.model || c.mod || f.mod;
+  if(ev.note) c.note = ev.note;
+  if(ev.status==='start'){ c.state='running'; c.ta=t; }
+  else if(ev.status==='step'){ if(c.state==='waiting'){c.state='running'; c.ta=t;} }
+  else if(ev.status==='done'){
+    c.state='done'; c.tf=t; if(!c.ta) c.ta=t;
+    if(ev.tokens!=null) c.tokens=ev.tokens;
+    if(ev.sec!=null) c.sec=ev.sec;
+  }
+  else if(ev.status==='stop' || ev.status==='error'){
+    c.state=ev.status; c.tf=t;
+    jobs.get(ev.job).outcome = (ev.status==='stop'?'stopped: ':'error: ')+(ev.note||'');
+  }
+  const J = jobs.get(ev.job);
+  const last = phases[phases.length-1];
+  if(ev.status==='done' && last && ev.phase===last.k){ J.outcome = '✓ '+(ev.note||'done'); J.ok = true; }
+}
+
+const fmtT = s => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), r=s%60; return (m<10?'0':'')+m+':'+(r<10?'0':'')+r; };
+const fmtK = n => n>=1e6 ? (n/1e6).toFixed(2)+'M' : n>=1000 ? Math.round(n/1000)+'k' : String(Math.round(n||0));
+const esc = s => String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function grid(){ return '200px ' + phases.map((_,i)=> (i?'24px ':'')+'1fr').join(' '); }
+
+function drawRows(){
+  if(!jobs.size) return;
+  const g = grid();
+  const head = document.getElementById('head');
+  head.style.gridTemplateColumns = g;
+  head.innerHTML = '<span>job</span>' + phases.map((f,i)=>(i?'<span></span>':'')+`<span><span class="m" style="background:${COLOR(f.mod)}"></span>${esc(f.k)}</span>`).join('');
+  let html = '';
+  for(const [name, J] of jobs){
+    html += `<div class="row" style="grid-template-columns:${g}"><div class="name">${esc(name)}<span class="outcome ${J.ok?'ok':''}">${J.outcome?esc(J.outcome):'&nbsp;'}</span></div>`;
+    phases.forEach((f,i)=>{
+      const c = J.cells[f.k] || {state:'waiting'};
+      const mod = c.mod || f.mod;
+      if(i>0){
+        const prev = J.cells[phases[i-1].k] || {state:'waiting'};
+        const w = prev.state==='done' && c.state==='running' ? 'on' : (prev.state==='done' && c.state!=='waiting') ? 'past' : '';
+        html += `<div class="wire ${w}"></div>`;
+      }
+      let right;
+      if(c.state==='running') right = '▸ '+fmtT((Date.now()-c.ta)/1000);
+      else if(c.state==='done'){ const d = c.sec!=null?c.sec:(c.tf-c.ta)/1000; right = '✓ '+(c.tokens!=null?fmtK(c.tokens)+' · ':'')+fmtT(d); }
+      else if(c.state==='stop') right = '■ stop';
+      else if(c.state==='error') right = '✕ error';
+      else right = '·';
+      html += `<div class="cell ${c.state}" style="--c:${COLOR(mod)}"><div class="l1"><span class="tag">${esc(mod)}</span><span>${right}</span></div><div class="l2" title="${esc(c.note)}">${c.note?esc(c.note):'&nbsp;'}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  document.getElementById('rows').innerHTML = html;
+}
+
+const anim = {};
+function animateTo(id, value, fmt){ const a = anim[id] || (anim[id] = {v:0}); a.target = value; a.fmt = fmt; }
+function tick(){
+  for(const id in anim){
+    const a = anim[id], el = document.getElementById(id);
+    if(a.target==null || !el) continue;
+    a.v += (a.target - a.v) * 0.12;
+    if(Math.abs(a.target-a.v) < 0.005) a.v = a.target;
+    el.innerHTML = a.fmt(a.v);
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+let modsSeen = '';
+let lastTotals = {base:0, real:0, tot:0};
+function drawTotals(){
+  const tok = {}, done = {}, running = {};
+  let base = 0, real = 0, agents = 0;
+  for(const [,J] of jobs) for(const f of phases){
+    const c = J.cells[f.k]; if(!c) continue;
+    const m = c.mod || f.mod; if(m==='session') continue;
+    tok[m] ??= 0; done[m] ??= 0; running[m] ??= 0;
+    if(c.state!=='waiting') agents++;
+    if(c.state==='running') running[m]++;
+    if(c.state==='done') done[m]++;
+    if(c.tokens){ tok[m]+=c.tokens; base += c.tokens*PRICE.opus/1e6; real += c.tokens*(PRICE[m]??PRICE.opus)/1e6; }
+  }
+  const order = ['haiku','sonnet','opus','fable'].filter(m=>m in tok);
+  const key = order.join(',');
+  if(key !== modsSeen){
+    modsSeen = key;
+    document.getElementById('stack').innerHTML = order.map(m=>`<div id="st-${m}" style="background:${COLOR(m)};flex-grow:0"></div>`).join('');
+    document.getElementById('mods').innerHTML = order.map(m=>`<div class="mod" style="border-color:${COLOR(m)}"><div class="act" style="color:${COLOR(m)}">${m}${EFFORT[m]?' · '+EFFORT[m]:''}<span id="d-${m}"></span></div><div class="n" id="t-${m}">0</div><div class="s" id="c-${m}"></div></div>`).join('');
+  }
+  const tot = order.reduce((s,m)=>s+tok[m],0);
+  for(const m of order){
+    document.getElementById('st-'+m).style.flexGrow = tok[m];
+    animateTo('t-'+m, tok[m], v => fmtK(v) + (tot?` <span class="s">${Math.round(tok[m]/tot*100)}%</span>`:''));
+    document.getElementById('c-'+m).textContent = `${done[m]} done · ${running[m]} running`;
+    document.getElementById('d-'+m).innerHTML = running[m] ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
+  }
+  const perc = base ? (1 - real/base)*100 : 0;
+  animateTo('perc', perc, v => Math.round(v)+'<small>%</small>');
+  animateTo('vbase', base, v => '$'+v.toFixed(2));
+  animateTo('vreal', real, v => '$'+v.toFixed(2));
+  document.getElementById('fbase').style.width = base ? '100%' : '0';
+  document.getElementById('freal').style.width = base ? (real/base*100)+'%' : '0';
+  document.getElementById('nagents').textContent = agents;
+  lastTotals = {base, real, tot};
+  drawPlan();
+}
+
+// ---- plan usage: snapshots written by the status line ----
+const limits = [];
+// Several sessions write slightly different readings (24, 20, 24...): for each window (resets_at)
+// take the HIGHEST reading, which is the most recent one; usage is that maximum minus the baseline.
+// When a window resets (resets_at changes) it starts again from 0.
+function usageSince(t, k, kr){
+  const l = limits.filter(x => typeof x[k] === 'number');
+  if(!l.length) return null;
+  const before = l.filter(x => new Date(x.t).getTime() <= t);
+  const after = l.filter(x => new Date(x.t).getTime() > t);
+  const ref = before.length ? before[before.length-1] : l[0];
+  const refWin = ref[kr];
+  // no readings before the job: baseline = highest reading in the first minute (ignores stale values)
+  const t1 = new Date(l[0].t).getTime() + 60000;
+  const forBase = before.length ? before : l.filter(x => new Date(x.t).getTime() <= t1);
+  const base = Math.max(...forBase.filter(x => x[kr] === refWin).map(x => x[k]));
+  const maxPer = new Map();
+  for(const x of [ref, ...after]) maxPer.set(x[kr], Math.max(maxPer.get(x[kr]) ?? 0, x[k]));
+  let used = 0;
+  for(const [win, m] of maxPer) used += win === refWin ? Math.max(0, m - base) : m;
+  const lastWin = l[l.length-1][kr];
+  const now = maxPer.get(lastWin) ?? l[l.length-1][k];
+  const pre = lastWin === refWin ? base : 0;
+  return {now, before: pre, used: lastWin === refWin ? Math.max(0, now - base) : now, usedTotal: used};
+}
+function drawPlan(){
+  const t = t0 || Date.now();
+  const fmtP = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + '%';
+  for(const [k,kr,id] of [['h5','h5r','h5'],['d7','d7r','d7']]){
+    const c = usageSince(t, k, kr);
+    if(!c) continue;
+    document.getElementById(id+'pre').style.width = Math.min(100,c.before)+'%';
+    const g = document.getElementById(id+'run');
+    g.style.left = Math.min(100,c.before)+'%'; g.style.width = Math.min(100-c.before, c.used)+'%';
+    document.getElementById(id+'v').innerHTML = `${fmtP(c.now)} <span style="color:var(--acid)">+${fmtP(c.used)}</span>`;
+  }
+  const d7 = usageSince(t, 'd7', 'd7r');
+  const {base, real, tot} = lastTotals;
+  if(d7){
+    const r = real > 0 ? base/real : 1;
+    const u = d7.usedTotal;
+    animateTo('pl-used', u, v => '+'+fmtP(v));
+    animateTo('pl-opus', u*r, v => '+'+fmtP(v)+' <span class="s">estimate</span>');
+    animateTo('pl-saved', u*(r-1), v => fmtP(v)+' <span class="s">of the week</span>');
+  }
+  const eq = real ? real/PRICE.opus*1e6 : 0;
+  animateTo('pl-eq', eq, v => fmtK(v) + (tot ? ` <span class="s">instead of ${fmtK(tot)}</span>` : ''));
+}
+
+function drawLog(fresh){
+  const latest = events.filter(e=>e.job && e.phase!=='_').slice(-9).reverse();
+  document.getElementById('log').innerHTML = latest.map((e,i)=>{
+    const time = new Date(e.t).toLocaleTimeString();
+    const sym = {start:'▸',step:'·',done:'✓',stop:'■',error:'✕'}[e.status]||'·';
+    const extra = e.tokens!=null ? ` · ${fmtK(e.tokens)} tokens` : '';
+    const mod = e.model || (phases.find(f=>f.k===e.phase)||{}).mod || '';
+    return `<div class="r ${i===0&&fresh?'fresh':''}"><span class="t">${time}</span><span>${esc(e.job)}</span><span>${esc(e.phase)}</span><span style="color:${COLOR(mod)}">${esc(mod)}</span><span>${sym} ${esc(e.note||e.status)}${extra}</span></div>`;
+  }).join('');
+}
+
+function all(fresh){ drawRows(); drawTotals(); drawLog(fresh); }
+
+setInterval(()=>{
+  if(t0) document.getElementById('elapsed').textContent = fmtT((Date.now()-t0)/1000);
+  drawRows();
+}, 1000);
+
+function clear(){
+  phases = []; jobs.clear(); events.length = 0; limits.length = 0; t0 = null; ready = false; modsSeen = '';
+  document.getElementById('rows').innerHTML = '<div class="empty">waiting for the first event…</div>';
+  document.getElementById('head').innerHTML = '';
+}
+
+function connect(){
+  const es = new EventSource('/stream');
+  es.onopen = () => { clear(); document.getElementById('live').classList.remove('off'); document.getElementById('conn').textContent = 'live'; };
+  es.onerror = () => { document.getElementById('live').classList.add('off'); document.getElementById('conn').textContent = 'reconnecting…'; };
+  const onReady = () => { ready = true; all(false); };
+  const onLimits = m => { limits.push(JSON.parse(m.data)); if(ready) drawPlan(); };
+  es.addEventListener('reset', () => { clear(); all(false); });
+  // 'pronto' and 'limiti' are the event names used by older servers
+  es.addEventListener('ready', onReady); es.addEventListener('pronto', onReady);
+  es.addEventListener('limits', onLimits); es.addEventListener('limiti', onLimits);
+  es.onmessage = m => {
+    const ev = normalize(JSON.parse(m.data));
+    events.push(ev); apply(ev);
+    if(ready) all(true);
+  };
+}
+connect();
+</script>
+</body>
+</html>

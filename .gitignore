@@ -1,0 +1,8 @@
+# runtime data lives in ~/.token-diet, but never commit stray copies
+*.jsonl
+limits-latest.json
+server.log
+archive/
+archivio/
+node_modules/
+.env*
